@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>4BHK Virtual Tour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Background music -->
+  <audio id="background-music" loop>
+    <source src="../assets/audio/audio.mp3" type="audio/mpeg" />
+  </audio>
+
+  <!-- Preloads & Analytics -->
+  <link rel="preload" href="script.js?v=1754247823751" as="script" />
+  <link rel="preload" href="media/panorama_7A23F939_714A_C2FF_41D2_8BC9CB36561B_0/l/2/0_0.jpg?v=1754247823751" as="image" />
+  <link rel="preload" href="media/panorama_7A23F939_714A_C2FF_41D2_8BC9CB36561B_0/r/2/0_0.jpg?v=1754247823751" as="image" />
+  <link rel="preload" href="media/panorama_7A23F939_714A_C2FF_41D2_8BC9CB36561B_0/u/2/0_0.jpg?v=1754247823751" as="image" />
+  <link rel="preload" href="media/panorama_7A23F939_714A_C2FF_41D2_8BC9CB36561B_0/d/2/0_0.jpg?v=1754247823751" as="image" />
+  <link rel="preload" href="media/panorama_7A23F939_714A_C2FF_41D2_8BC9CB36561B_0/f/2/0_0.jpg?v=1754247823751" as="image" />
+  <link rel="preload" href="media/panorama_7A23F939_714A_C2FF_41D2_8BC9CB36561B_0/b/2/0_0.jpg?v=1754247823751" as="image" />
+  <meta name="description" content="Virtual Tour" />
+  <meta name="theme-color" content="#FFFFFF" />
+  <script src="lib/tdvplayer.js?v=1754247823751"></script>
+
+  <script>
+    var player, isPaused = false, isInitialized = false;
+    var bgMusic, isMusicPlaying = true;
+
+    function loadTour() {
+      if (player) return;
+      const settings = new TDV.PlayerSettings();
+      settings.set(TDV.PlayerSettings.CONTAINER, document.getElementById('viewer'));
+      settings.set(TDV.PlayerSettings.SCRIPT_URL, 'script.js?v=1754247823751');
+      settings.set(TDV.PlayerSettings.WEBVR_POLYFILL_URL, 'lib/WebVRPolyfill.js?v=1754247823751');
+      settings.set(TDV.PlayerSettings.HLS_URL, 'lib/Hls.js?v=1754247823751');
+      settings.set(TDV.PlayerSettings.QUERY_STRING_PARAMETERS, 'v=1754247823751');
+
+      window.tdvplayer = player = TDV.PlayerAPI.create(settings);
+
+      const beginFunc = function (event) {
+        if (event.sourceClassName === "MediaAudio") return;
+        isInitialized = true;
+        player.unbind('preloadMediaShow', beginFunc, player, true);
+        player.unbind('stateChange', beginFunc, player, true);
+        disposePreloader();
+      };
+
+      player.bind('preloadMediaShow', beginFunc, player, true);
+      player.bind('stateChange', beginFunc, player, true);
+
+      player.bindOnObject('rootPlayer', 'start', () => {
+        const query = new URLSearchParams(window.location.search);
+        let item;
+        if (query.has('media-index')) {
+          item = setMediaByIndex(parseInt(query.get('media-index')) - 1);
+        } else if (query.has('media-name')) {
+          item = setMediaByName(query.get('media-name'));
+        } else {
+          item = setMediaByIndex(0);
+        }
+      });
+    }
+
+    function setMediaByIndex(index) {
+      const root = getRootPlayer();
+      if (root) return root.setMainMediaByIndex(index);
+    }
+
+    function setMediaByName(name) {
+      const root = getRootPlayer();
+      if (root) return root.setMainMediaByName(name);
+    }
+
+    function getRootPlayer() {
+      return window.tdvplayer?.getById('rootPlayer');
+    }
+
+    function disposePreloader() {
+      const pre = document.getElementById('preloadContainer');
+      if (!pre) return;
+      pre.style.opacity = 0;
+      setTimeout(() => pre.style.display = 'none', 500);
+    }
+
+    function showPreloader() {
+      const pre = document.getElementById('preloadContainer');
+      if (pre) pre.style.opacity = 1;
+    }
+
+    function onLoad() {
+      showPreloader();
+      loadTour();
+
+      bgMusic = document.getElementById('background-music');
+      bgMusic.volume = 0.3;
+      bgMusic.play().catch(e => console.log('Autoplay blocked:', e));
+    }
+
+    function toggleMusic() {
+      const btn = document.getElementById('music-btn');
+      if (isMusicPlaying) {
+        bgMusic.pause();
+        btn.innerHTML = '🔇';
+        btn.title = 'Turn Music On';
+      } else {
+        bgMusic.play();
+        btn.innerHTML = '🔊';
+        btn.title = 'Turn Music Off';
+      }
+      isMusicPlaying = !isMusicPlaying;
+    }
+
+    function toggleFullscreen() {
+      const elem = document.documentElement;
+      if (!document.fullscreenElement) elem.requestFullscreen();
+      else document.exitFullscreen();
+    }
+
+    function goHome() {
+      location.href = "/index.html";
+    }
+  </script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    #viewer {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: #fff;
+      z-index: 1;
+    }
+
+    #preloadContainer {
+      z-index: 2;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: opacity 0.5s;
+    }
+
+    .room-buttons {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      width: 90%;
+      max-width: 800px;
+    }
+
+    .room-buttons button {
+      background: rgba(0, 91, 87, 0.85);
+      border: 2px solid #ffd37b;
+      color: #ffd37b;
+      font-size: 0.95rem;
+      font-weight: bold;
+      padding: 10px 20px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(4px);
+      letter-spacing: 0.5px;
+    }
+
+    .room-buttons button:hover {
+      background: rgba(0, 91, 87, 1);
+      transform: scale(1.05);
+      color: #fff8e1;
+      box-shadow: 0 6px 16px rgba(255, 211, 123, 0.4);
+    }
+
+    /* ✅ Controls moved to top-left */
+    .controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 15px;
+      z-index: 3;
+    }
+
+    .controls button {
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .controls button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    @media (max-width: 600px) {
+      .room-buttons {
+        gap: 8px;
+        bottom: 16px;
+      }
+
+      .room-buttons button {
+        font-size: 0.85rem;
+        padding: 8px 16px;
+      }
+
+      .controls {
+        top: 15px;
+        left: 15px;
+        gap: 10px;
+      }
+
+      .controls button {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body onload="onLoad()">
+  <div id="preloadContainer" style="background-color:#fff">
+    <div style="z-index: 4; position: absolute; left: 0; top: 50%; width: 100%;">
+      <div style="text-align:center; color:#777; font-size:1.5vmin;">
+        Loading virtual tour. Please wait...
+      </div>
+    </div>
+  </div>
+
+  <div id="viewer"></div>
+
+  <!-- Room Navigation Buttons -->
+  <div class="room-buttons">
+    <button onclick="setMediaByName('1')">Entrance</button>
+    <button onclick="setMediaByName('2')">Living</button>
+    <button onclick="setMediaByName('kitchen copy')">Kitchen</button>
+    <button onclick="setMediaByName('4bk01_10 copy')">Master Bedroom</button>
+    <button onclick="setMediaByName('4bk02')">Bedroom 1</button>
+    <button onclick="setMediaByName('4bk03')">Bedroom 2</button>
+    <button onclick="setMediaByName('bed04360 copy')">Bedroom 3</button>
+  </div>
+
+  <!-- ✅ Controls (Top-Left) -->
+  <div class="controls">
+    <button onclick="goHome()" title="Home">🏠</button>
+    <button onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+    <button id="music-btn" onclick="toggleMusic()" title="Turn Music Off">🔊</button>
+  </div>
+</body>
+
+</html>
